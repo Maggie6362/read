@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>拾光待讀</title>
+  
+  <!-- iPhone PWA 全螢幕與狀態列設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="拾光待讀">
+  <link id="apple-touch-icon" rel="apple-touch-icon" href="">
+  
+  <!-- 引入 Tailwind CSS 與 Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* 定案配色：柔和琥珀麥穗金 × 燕麥奶棉麻 */
+      --bg-linen: #F4EFE6;       /* 溫潤燕麥棉麻底色 */
+      --bg-card: #FFFDF9;        /* 手工原漿紙張白 */
+      --bg-sub: #EAE2D3;         /* 亞麻織り深米色 */
+      --primary: #CC9544;        /* 柔和琥珀麥穗金 */
+      --primary-hover: #B58032;  /* 按壓深琥珀 */
+      --primary-light: #FBF3E0;  /* 暖陽淡奶油底 */
+      --text-main: #3E3832;      /* 烘焙深咖啡炭色 */
+      --text-muted: #857B70;     /* 亞麻灰棕 */
+      --border-color: #DCD2C0;   /* 手帳紙邊框色 */
+    }
+
+    body {
+      background-color: var(--bg-linen);
+      color: var(--text-main);
+      font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
+      font-size: 15.5px; /* 整體預設字體調大，閱讀更舒適 */
+      line-height: 1.5;
+      -webkit-tap-highlight-color: transparent;
+      /* 日式棉麻十字編織與紙張纖維紋理 */
+      background-image:
+        repeating-linear-gradient(0deg, rgba(133, 123, 112, 0.045) 0px, rgba(133, 123, 112, 0.045) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(90deg, rgba(133, 123, 112, 0.045) 0px, rgba(133, 123, 112, 0.045) 1px, transparent 1px, transparent 4px),
+        radial-gradient(rgba(180, 160, 130, 0.16) 1px, transparent 0);
+      background-size: 4px 4px, 4px 4px, 18px 18px;
+    }
+
+    /* 字體再放大模式 (A+) */
+    body.large-font {
+      font-size: 17px;
+    }
+    body.large-font .card-title {
+      font-size: 1.3rem !important;
+      line-height: 1.75rem !important;
+    }
+    body.large-font .tag-pill {
+      font-size: 0.95rem !important;
+    }
+
+    /* 手工紙張卡片質感 */
+    .zakka-card {
+      background-color: var(--bg-card);
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(244,239,230,0.25) 100%);
+      border: 1.5px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 
+        0 4px 14px rgba(100, 85, 65, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .zakka-dashed {
+      border: 2px dashed var(--primary);
+      background-color: var(--primary-light);
+    }
+
+    /* 主視覺按鈕 */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      text-shadow: 0 1px 1.5px rgba(90, 58, 18, 0.28);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:active {
+      background-color: var(--primary-hover);
+      transform: scale(0.98);
+    }
+
+    .pill-active {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+      font-weight: 700;
+      text-shadow: 0 1px 1.5px rgba(90, 58, 18, 0.28);
+    }
+
+    .pill-inactive {
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    /* 頁面切換動畫 */
+    .page-view {
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 底部獨立分頁導覽列 */
+    .bottom-nav {
+      background-color: rgba(255, 253, 249, 0.96);
+      backdrop-filter: blur(14px);
+      border-top: 1.5px solid var(--border-color);
+      box-shadow: 0 -4px 16px rgba(100, 85, 65, 0.06);
+    }
+
+    .nav-item {
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .nav-item.active {
+      color: #A87424;
+      font-weight: 700;
+    }
+    .nav-item.active .nav-icon-wrap {
+      background-color: var(--primary-light);
+      border: 1px solid #EBD7B2;
+      transform: translateY(-2px);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-28 selection:bg-amber-200">
+
+  <!-- 頂部標題與工具列 -->
+  <header class="sticky top-0 z-30 bg-[#F4EFE6]/90 backdrop-blur-md border-b border-[#DCD2C0] px-4 py-3">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- 置頂溫暖小太陽圖示 -->
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style="background-color: var(--primary-light); border: 1.5px solid var(--border-color);">
+          <span class="text-2xl">☀️</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide leading-tight" style="color: var(--text-main);">拾光待讀</h1>
+          <p id="page-subtitle" class="text-xs font-medium" style="color: var(--text-muted);">依碎片時間快篩待讀好文</p>
+        </div>
+      </div>
+
+      <!-- 右側工具：字體放大、資料備份 -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleFontSize()" id="font-btn" class="px-3.5 py-1.5 rounded-xl text-sm font-bold border bg-[#FFFDF9] shadow-sm active:scale-95 transition" style="border-color: var(--border-color); color: var(--text-main);">
+          A+
+        </button>
+        <button onclick="openBackupModal()" title="資料備份與還原" class="px-2.5 py-1.5 rounded-xl text-base border bg-[#FFFDF9] shadow-sm active:scale-95 transition" style="border-color: var(--border-color);">
+          📦
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容容器：三頁獨立視圖 (Multi-View Pages) -->
+  <main class="max-w-md mx-auto px-4 pt-4">
+
+    <!-- ==========================================
+         【獨立頁面 1：📌 收集靈感 (新增頁面)】
+         ========================================== -->
+    <div id="view-add" class="page-view hidden space-y-4">
+      <section class="zakka-card p-5">
+        <div class="flex items-center justify-between mb-4 pb-2.5 border-b" style="border-color: var(--border-color);">
+          <h2 class="text-base font-bold flex items-center gap-1.5">
+            <span>📌</span> 收藏新文章 / 靈感連結
+          </h2>
+          <button onclick="smartPasteFromClipboard()" class="text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1 border transition active:scale-95" style="background-color: var(--primary-light); color: #9C6B21; border-color: #EBD7B2;">
+            📋 貼上並分離
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 網址輸入欄 (必填) -->
+          <div>
+            <label class="block text-xs font-bold mb-1.5" style="color: var(--text-main);">🔗 網頁連結 (必填) *</label>
+            <input type="text" id="input-url" oninput="handleSmartInput(this.value)" placeholder="貼上連結，或「標題＋網址」整串貼上" 
+              class="w-full px-3.5 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition bg-[#FAF6EE]"
+              style="border-color: var(--border-color);">
+          </div>
+
+          <!-- 標題輸入欄 -->
+          <div>
+            <label class="block text-xs font-bold mb-1.5" style="color: var(--text-main);">📝 文章標題或靈感筆記</label>
+            <input type="text" id="input-title" placeholder="簡短記下重點（若留空將以網域代替）" 
+              class="w-full px-3.5 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition bg-white"
+              style="border-color: var(--border-color);">
+          </div>
+
+          <!-- 預估閱讀時間選擇 -->
+          <div>
+            <label class="block text-xs font-bold mb-2" style="color: var(--text-main);">⏱️ 預估閱讀時間</label>
+            <div class="grid grid-cols-3 gap-2" id="form-time-group">
+              <button type="button" onclick="selectFormTime('3')" data-time="3" class="form-time-btn pill-active py-2.5 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+                ☕ 3分鐘
+              </button>
+              <button type="button" onclick="selectFormTime('10')" data-time="10" class="form-time-btn pill-inactive py-2.5 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+                📖 10分鐘
+              </button>
+              <button type="button" onclick="selectFormTime('30')" data-time="30" class="form-time-btn pill-inactive py-2.5 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+                🎧 30分鐘
+              </button>
+            </div>
+          </div>
+
+          <!-- 主題分類選擇 -->
+          <div>
+            <label class="block text-xs font-bold mb-2" style="color: var(--text-main);">🏷️ 主題分類</label>
+            <div class="flex flex-wrap gap-2" id="form-cat-group">
+              <!-- 由 JS 動態生成 7 大分類 -->
+            </div>
+          </div>
+
+          <!-- 錯誤提示與儲存按鈕 -->
+          <p id="form-error" class="text-xs text-red-700 hidden bg-red-50 px-3 py-2 rounded-xl border border-red-200"></p>
+
+          <button onclick="addNewItem()" class="w-full btn-primary py-3 rounded-xl text-sm font-bold shadow-sm flex items-center justify-center gap-1.5 mt-2">
+            <span>✨ 收入待讀清單</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 底部溫馨小提醒卡片 -->
+      <div class="zakka-card p-4 flex items-center justify-between" style="background-color: var(--primary-light);">
+        <div class="text-xs space-y-0.5">
+          <p class="font-bold" style="color: #8C5E1A;">💡 目前待讀口袋裡共有 <span id="add-page-unread-count" class="underline">0</span> 篇文章</p>
+          <p style="color: var(--text-muted);">點選下方「⏳ 待讀清單」即可按空檔時間篩選閱讀</p>
+        </div>
+        <button onclick="navigateTo('unread')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border bg-white shadow-sm whitespace-nowrap" style="border-color: var(--border-color); color: var(--text-main);">
+          前往待讀 →
+        </button>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         【獨立頁面 2：⏳ 待讀清單 (空檔快篩與閱讀頁)】
+         ========================================== -->
+    <div id="view-unread" class="page-view space-y-4">
+      <!-- 篩選控制面板 -->
+      <section class="zakka-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold flex items-center gap-1" style="color: var(--text-muted);">
+            ⏱️ 依空檔時間快篩：
+          </span>
+          <button onclick="resetFilters('unread')" class="text-xs font-bold underline" style="color: var(--text-muted);">重設篩選</button>
+        </div>
+
+        <!-- 時間篩選列：全部時間改為 All，不分行 -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5 items-center" id="unread-time-group">
+          <button onclick="setUnreadFilterTime('all')" data-ftime="all" class="unread-time-btn pill-active px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            All
+          </button>
+          <button onclick="setUnreadFilterTime('3')" data-ftime="3" class="unread-time-btn pill-inactive px-3.5 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            ☕ 3分鐘內
+          </button>
+          <button onclick="setUnreadFilterTime('10')" data-ftime="10" class="unread-time-btn pill-inactive px-3.5 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            📖 10分鐘
+          </button>
+          <button onclick="setUnreadFilterTime('30')" data-ftime="30" class="unread-time-btn pill-inactive px-3.5 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            🎧 30分鐘
+          </button>
+        </div>
+
+        <!-- 主題分類篩選列：全部分類改為 All，不分行 -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pt-2 border-t items-center" style="border-color: var(--border-color);" id="unread-cat-group">
+          <!-- 由 JS 動態生成 -->
+        </div>
+      </section>
+
+      <!-- 隨機挑一篇橫幅 & 抽籤結果展示區 -->
+      <section id="random-picker-section" class="space-y-3">
+        <div class="zakka-card px-4 py-3 flex items-center justify-between" style="background-color: var(--primary-light); border-color: #E2C99B;">
+          <div>
+            <p class="text-xs font-bold" style="color: #8C5E1A;" id="random-banner-title">⏳ 有點空檔嗎？</p>
+            <p class="text-xs" style="color: var(--text-main);">從上方篩選出的待讀文章中隨機抽一篇</p>
+          </div>
+          <button onclick="pickRandomArticle()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1 whitespace-nowrap">
+            🎲 幫我挑一篇
+          </button>
+        </div>
+
+        <!-- 隨機抽出的單篇精選卡片 -->
+        <div id="spotlight-card" class="hidden zakka-card zakka-dashed p-4 relative transition-all">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full btn-primary">
+              ✨ 為您挑出的拾光精選
+            </span>
+            <div class="flex items-center gap-2">
+              <button onclick="pickRandomArticle()" class="text-xs underline font-bold" style="color: #8C5E1A;">🔄 換一篇</button>
+              <button onclick="closeSpotlight()" class="text-xs px-1.5 py-0.5 rounded text-gray-500">✕</button>
+            </div>
+          </div>
+          <div id="spotlight-content"></div>
+        </div>
+      </section>
+
+      <!-- 待讀文章清單 -->
+      <section id="unread-list" class="space-y-3.5"></section>
+    </div>
+
+    <!-- ==========================================
+         【獨立頁面 3：✅ 已讀歸檔 (歷史寶庫頁)】
+         ========================================== -->
+    <div id="view-archived" class="page-view hidden space-y-4">
+      <!-- 已讀歸檔頁專屬分類篩選列 -->
+      <section class="zakka-card p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold" style="color: var(--text-muted);">🗄️ 依主題回顧已讀文章：</span>
+          <span class="text-xs font-bold" style="color: #8C5E1A;">累計讀完 <span id="archived-total-badge">0</span> 篇</span>
+        </div>
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5 items-center" id="archived-cat-group">
+          <!-- 由 JS 動態生成 -->
+        </div>
+      </section>
+
+      <!-- 已讀歸檔清單 -->
+      <section id="archived-list" class="space-y-3.5"></section>
+    </div>
+
+  </main>
+
+  <!-- ==========================================
+       底部固定分頁導覽列 (獨立切換 3 個頁面)
+       ========================================== -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bottom-nav px-4 py-2">
+    <div class="max-w-md mx-auto grid grid-cols-3 gap-2">
+      <button onclick="navigateTo('add')" id="nav-add" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl">
+        <div class="nav-icon-wrap px-4 py-0.5 rounded-full transition text-lg">📌</div>
+        <span class="text-xs font-bold mt-0.5">收集靈感</span>
+      </button>
+
+      <button onclick="navigateTo('unread')" id="nav-unread" class="nav-item active flex flex-col items-center justify-center py-1 rounded-xl relative">
+        <div class="nav-icon-wrap px-4 py-0.5 rounded-full transition text-lg relative">
+          ⏳
+          <span id="nav-badge-unread" class="ml-0.5 text-xs font-bold px-1.5 py-0.2 rounded-full" style="background-color: var(--primary); color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.2);">0</span>
+        </div>
+        <span class="text-xs font-bold mt-0.5">待讀清單</span>
+      </button>
+
+      <button onclick="navigateTo('archived')" id="nav-archived" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl">
+        <div class="nav-icon-wrap px-4 py-0.5 rounded-full transition text-lg">
+          ✅
+          <span id="nav-badge-archived" class="ml-0.5 text-xs font-medium px-1.5 py-0.2 rounded-full bg-[#EAE2D3]" style="color: var(--text-main);">0</span>
+        </div>
+        <span class="text-xs font-bold mt-0.5">已讀歸檔</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==========================================
+       修改文章「閱讀時間與分類」彈出視窗
+       ========================================== -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
+    <div class="zakka-card max-w-sm w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2.5" style="border-color: var(--border-color);">
+        <h3 class="font-bold text-base flex items-center gap-1.5">✏️ 調整文章設定</h3>
+        <button onclick="closeEditModal()" class="text-gray-400 text-lg px-1">✕</button>
+      </div>
+
+      <div class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold mb-1" style="color: var(--text-muted);">📝 文章標題</label>
+          <input type="text" id="edit-title" class="w-full px-3 py-2 rounded-xl text-sm border bg-white focus:outline-none" style="border-color: var(--border-color);">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1.5" style="color: var(--text-muted);">⏱️ 調整閱讀時間</label>
+          <div class="grid grid-cols-3 gap-2" id="edit-time-group">
+            <button type="button" onclick="selectEditTime('3')" data-etime="3" class="edit-time-btn pill-inactive py-2 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+              ☕ 3分鐘
+            </button>
+            <button type="button" onclick="selectEditTime('10')" data-etime="10" class="edit-time-btn pill-inactive py-2 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+              📖 10分鐘
+            </button>
+            <button type="button" onclick="selectEditTime('30')" data-etime="30" class="edit-time-btn pill-inactive py-2 px-2 rounded-xl text-xs font-bold border text-center transition whitespace-nowrap">
+              🎧 30分鐘
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1.5" style="color: var(--text-muted);">🏷️ 調整主題分類</label>
+          <div class="flex flex-wrap gap-1.5" id="edit-cat-group">
+            <!-- 由 JS 動態生成 -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeEditModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border bg-white" style="border-color: var(--border-color); color: var(--text-muted);">
+          取消
+        </button>
+        <button onclick="saveEditedItem()" class="flex-1 py-2.5 rounded-xl text-xs font-bold btn-primary">
+          💾 儲存修改
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備份與匯入 Modal -->
+  <div id="backup-modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
+    <div class="zakka-card max-w-sm w-full p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base">📦 資料備份與還原</h3>
+        <button onclick="closeBackupModal()" class="text-gray-400 text-lg">✕</button>
+      </div>
+      <p class="text-xs leading-relaxed" style="color: var(--text-muted);">
+        您的待讀清單儲存在 iPhone 本機瀏覽器中。若要更換手機或備份，可複製下方 JSON 代碼保存，或貼上代碼還原。
+      </p>
+      <textarea id="backup-textarea" rows="5" class="w-full p-2.5 text-xs border rounded-xl bg-[#FAF6EE] font-mono" style="border-color: var(--border-color);"></textarea>
+      <div class="flex gap-2">
+        <button onclick="copyBackupData()" class="flex-1 py-2 rounded-xl text-xs font-bold border bg-white" style="border-color: var(--border-color);">
+          📋 複製備份碼
+        </button>
+        <button onclick="importBackupData()" class="flex-1 py-2 rounded-xl text-xs font-bold btn-primary">
+          📥 匯入並還原
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 輕量提示 Toast -->
+  <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none whitespace-nowrap" style="background-color: #3E3832;">
+    提示訊息
+  </div>
+
+  <script>
+    // --- 常數與預設設定 ---
+    const STORAGE_KEY = 'shiguang_pocket_vault_v1';
+    const FONT_KEY = 'shiguang_font_v1';
+
+    // 依指定順序排列的 7 大主題分類
+    const CATEGORIES = [
+      { id: '生活', icon: '🌿' },
+      { id: '旅遊', icon: '✈️' },
+      { id: '理財', icon: '📈' },
+      { id: 'AI學習', icon: '🤖' },
+      { id: '健康', icon: '🍎' },
+      { id: '工作', icon: '💼' },
+      { id: '其他', icon: '📦' }
+    ];
+
+    const TIME_LABELS = {
+      '3': { label: '☕ 3分鐘', badgeBg: '#FBF1DC', badgeText: '#9C681C' },
+      '10': { label: '📖 10分鐘', badgeBg: '#F2ECE1', badgeText: '#6B5B4B' },
+      '30': { label: '🎧 30分鐘', badgeBg: '#EAE6DF', badgeText: '#4F5861' }
+    };
+
+    // 預設範例資料
+    const DEFAULT_ITEMS = [
+      {
+        id: 'demo-1',
+        title: '四季豆與葉菜類這樣保存！延長保鮮期兩週的日本主婦冰箱收納術',
+        url: 'https://example.com/veggie-storage-tips',
+        time: '3',
+        category: '生活',
+        archived: false,
+        createdAt: Date.now() - 3600000 * 5
+      },
+      {
+        id: 'demo-2',
+        title: '用 Perplexity 搭配 NotebookLM 建立個人高效率知識庫與簡報大綱工作流',
+        url: 'https://vocus.cc/article/ai-workflow-guide',
+        time: '10',
+        category: 'AI學習',
+        archived: false,
+        createdAt: Date.now() - 3600000 * 12
+      },
+      {
+        id: 'demo-3',
+        title: '帶長輩慢活自駕遊日本：無障礙動線規劃、休息站挑選與飯店預訂清單',
+        url: 'https://example.com/slow-drive-japan-guide',
+        time: '3',
+        category: '旅遊',
+        archived: false,
+        createdAt: Date.now() - 3600000 * 24
+      }
+    ];
+
+    // --- 狀態管理 ---
+    let items = [];
+    let currentPage = 'unread';
+    let selectedFormTime = '3';
+    let selectedFormCategory = '生活';
+
+    let unreadFilterTime = 'all';
+    let unreadFilterCategory = 'all';
+    let currentSpotlightId = null;
+
+    let archivedFilterCategory = 'all';
+
+    let editingItemId = null;
+    let editTimeVal = '3';
+    let editCategoryVal = '生活';
+
+    // --- 初始化 ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      loadItems();
+      renderCategoryControls();
+      navigateTo('unread');
+      generateAppleTouchIcon();
+    });
+
+    // --- 獨立頁面切換導覽 ---
+    function navigateTo(page) {
+      currentPage = page;
+      closeSpotlight();
+
+      const views = ['add', 'unread', 'archived'];
+      const subtitles = {
+        'add': '收藏新文章與靈感連結',
+        'unread': '依碎片時間快篩待讀好文',
+        'archived': '已讀完的知識與靈感寶庫'
+      };
+
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const navEl = document.getElementById(`nav-${v}`);
+        if (v === page) {
+          viewEl.classList.remove('hidden');
+          navEl.classList.add('active');
+        } else {
+          viewEl.classList.add('hidden');
+          navEl.classList.remove('active');
+        }
+      });
+
+      document.getElementById('page-subtitle').textContent = subtitles[page];
+      renderAllLists();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- 智慧網址與標題分離邏輯 ---
+    function extractUrlAndTitle(rawText) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const matches = rawText.match(urlRegex);
+      if (!matches) return { url: null, cleanTitle: '' };
+
+      const extractedUrl = matches[0];
+      const remainingText = rawText
+        .replace(extractedUrl, '')
+        .replace(/^[\s\-—:：｜|、【】]+|[\s\-—:：｜|、【】]+$/g, '')
+        .trim();
+
+      return { url: extractedUrl, cleanTitle: remainingText };
+    }
+
+    function handleSmartInput(val) {
+      const { url, cleanTitle } = extractUrlAndTitle(val);
+      if (url && cleanTitle.length > 0) {
+        document.getElementById('input-url').value = url;
+        const titleInput = document.getElementById('input-title');
+        if (!titleInput.value.trim()) {
+          titleInput.value = cleanTitle;
+        }
+        showToast('✨ 已自動分離標題與網址！');
+      }
+      hideError();
+    }
+
+    async function smartPasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text || !text.trim()) {
+          showToast('剪貼簿目前是空的喔！');
+          return;
+        }
+        const { url, cleanTitle } = extractUrlAndTitle(text);
+        if (url) {
+          document.getElementById('input-url').value = url;
+          if (cleanTitle) {
+            document.getElementById('input-title').value = cleanTitle;
+            showToast('✨ 已貼上並自動分離標題與網址！');
+          } else {
+            showToast('📋 已貼上連結！');
+          }
+          hideError();
+        } else {
+          document.getElementById('input-url').value = text.trim();
+          showToast('📋 已貼上文字，請確認是否包含完整網址');
+        }
+      } catch (err) {
+        showToast('請長按連結輸入框選擇「貼上」');
+        document.getElementById('input-url').focus();
+      }
+    }
+
+    // --- 渲染所有分類按鈕列 ---
+    function renderCategoryControls() {
+      // 1. 新增頁面的分類按鈕
+      const formCatGroup = document.getElementById('form-cat-group');
+      formCatGroup.innerHTML = CATEGORIES.map(cat => {
+        const activeClass = cat.id === selectedFormCategory ? 'pill-active' : 'pill-inactive';
+        return `
+          <button type="button" onclick="selectFormCategory('${cat.id}')" 
+            class="${activeClass} px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 whitespace-nowrap">
+            <span>${cat.icon}</span><span>${cat.id}</span>
+          </button>
+        `;
+      }).join('');
+
+      // 2. 待讀清單頁的分類篩選列：改為「All」，單行不折行
+      const unreadCatGroup = document.getElementById('unread-cat-group');
+      const unreadAllActive = unreadFilterCategory === 'all' ? 'pill-active' : 'pill-inactive';
+      let unreadCatHtml = `
+        <button onclick="setUnreadFilterCategory('all')" class="${unreadAllActive} px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+          All
+        </button>
+      `;
+      unreadCatHtml += CATEGORIES.map(cat => {
+        const active = unreadFilterCategory === cat.id ? 'pill-active' : 'pill-inactive';
+        return `
+          <button onclick="setUnreadFilterCategory('${cat.id}')" class="${active} px-3.5 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            ${cat.icon} ${cat.id}
+          </button>
+        `;
+      }).join('');
+      unreadCatGroup.innerHTML = unreadCatHtml;
+
+      // 3. 已讀歸檔頁的分類篩選列：改為「All」，單行不折行
+      const archivedCatGroup = document.getElementById('archived-cat-group');
+      const archAllActive = archivedFilterCategory === 'all' ? 'pill-active' : 'pill-inactive';
+      let archCatHtml = `
+        <button onclick="setArchivedFilterCategory('all')" class="${archAllActive} px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+          All
+        </button>
+      `;
+      archCatHtml += CATEGORIES.map(cat => {
+        const active = archivedFilterCategory === cat.id ? 'pill-active' : 'pill-inactive';
+        return `
+          <button onclick="setArchivedFilterCategory('${cat.id}')" class="${active} px-3.5 py-2 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 transition">
+            ${cat.icon} ${cat.id}
+          </button>
+        `;
+      }).join('');
+      archivedCatGroup.innerHTML = archCatHtml;
+    }
+
+    function selectFormTime(timeVal) {
+      selectedFormTime = timeVal;
+      document.querySelectorAll('.form-time-btn').forEach(btn => {
+        btn.classList.toggle('pill-active', btn.dataset.time === timeVal);
+        btn.classList.toggle('pill-inactive', btn.dataset.time !== timeVal);
+      });
+    }
+
+    function selectFormCategory(catId) {
+      selectedFormCategory = catId;
+      renderCategoryControls();
+    }
+
+    function getDomainName(url) {
+      try {
+        const u = new URL(url);
+        return u.hostname.replace(/^www\./, '');
+      } catch (e) {
+        return '網頁連結';
+      }
+    }
+
+    function addNewItem() {
+      const urlInput = document.getElementById('input-url');
+      const titleInput = document.getElementById('input-title');
+      let rawUrl = urlInput.value.trim();
+      let rawTitle = titleInput.value.trim();
+
+      if (!rawUrl) {
+        showError('⚠️ 請貼上文章或網頁連結（連結為必填）');
+        urlInput.focus();
+        return;
+      }
+
+      const { url, cleanTitle } = extractUrlAndTitle(rawUrl);
+      if (url) {
+        rawUrl = url;
+        if (!rawTitle && cleanTitle) rawTitle = cleanTitle;
+      } else if (!/^https?:\/\//i.test(rawUrl) && rawUrl.includes('.')) {
+        rawUrl = 'https://' + rawUrl;
+      } else {
+        showError('⚠️ 請輸入有效的網址（例如 https://...）');
+        return;
+      }
+
+      const finalTitle = rawTitle || `${getDomainName(rawUrl)} 的收藏文章`;
+
+      const newItem = {
+        id: 'item-' + Date.now(),
+        title: finalTitle,
+        url: rawUrl,
+        time: selectedFormTime,
+        category: selectedFormCategory,
+        archived: false,
+        createdAt: Date.now()
+      };
+
+      items.unshift(newItem);
+      saveItems();
+
+      urlInput.value = '';
+      titleInput.value = '';
+      hideError();
+
+      navigateTo('unread');
+      showToast('✨ 已收入待讀清單！');
+    }
+
+    function showError(msg) {
+      const errEl = document.getElementById('form-error');
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('form-error').classList.add('hidden');
+    }
+
+    // --- 篩選器操作 ---
+    function setUnreadFilterTime(timeVal) {
+      unreadFilterTime = timeVal;
+      closeSpotlight();
+      document.querySelectorAll('.unread-time-btn').forEach(btn => {
+        btn.classList.toggle('pill-active', btn.dataset.ftime === timeVal);
+        btn.classList.toggle('pill-inactive', btn.dataset.ftime !== timeVal);
+      });
+      renderAllLists();
+    }
+
+    function setUnreadFilterCategory(catVal) {
+      unreadFilterCategory = catVal;
+      closeSpotlight();
+      renderCategoryControls();
+      renderAllLists();
+    }
+
+    function setArchivedFilterCategory(catVal) {
+      archivedFilterCategory = catVal;
+      renderCategoryControls();
+      renderAllLists();
+    }
+
+    function resetFilters(target) {
+      if (target === 'unread') {
+        setUnreadFilterTime('all');
+        setUnreadFilterCategory('all');
+      }
+    }
+
+    function getUnreadFilteredItems() {
+      return items.filter(item => {
+        if (item.archived) return false;
+        const matchTime = unreadFilterTime === 'all' ? true : item.time === unreadFilterTime;
+        const matchCat = unreadFilterCategory === 'all' ? true : item.category === unreadFilterCategory;
+        return matchTime && matchCat;
+      });
+    }
+
+    function getArchivedFilteredItems() {
+      return items.filter(item => {
+        if (!item.archived) return false;
+        return archivedFilterCategory === 'all' ? true : item.category === archivedFilterCategory;
+      });
+    }
+
+    // --- 隨機挑一篇精選短文 ---
+    function pickRandomArticle() {
+      const candidates = getUnreadFilteredItems();
+      if (candidates.length === 0) {
+        showToast('目前篩選條件下沒有待讀文章喔！');
+        return;
+      }
+
+      let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      if (candidates.length > 1 && chosen.id === currentSpotlightId) {
+        const others = candidates.filter(i => i.id !== currentSpotlightId);
+        chosen = others[Math.floor(Math.random() * others.length)];
+      }
+
+      currentSpotlightId = chosen.id;
+      const spotlightCard = document.getElementById('spotlight-card');
+      const spotlightContent = document.getElementById('spotlight-content');
+
+      spotlightContent.innerHTML = buildCardHtml(chosen, true);
+      spotlightCard.classList.remove('hidden');
+      spotlightCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeSpotlight() {
+      currentSpotlightId = null;
+      const el = document.getElementById('spotlight-card');
+      if (el) el.classList.add('hidden');
+    }
+
+    // --- 編輯已納入清單文章之「閱讀時間、分類、標題」 ---
+    function openEditModal(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      editingItemId = id;
+      editTimeVal = item.time || '3';
+      editCategoryVal = item.category || '其他';
+
+      document.getElementById('edit-title').value = item.title;
+      updateEditModalButtons();
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      editingItemId = null;
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    function selectEditTime(t) {
+      editTimeVal = t;
+      updateEditModalButtons();
+    }
+
+    function selectEditCategory(c) {
+      editCategoryVal = c;
+      updateEditModalButtons();
+    }
+
+    function updateEditModalButtons() {
+      document.querySelectorAll('.edit-time-btn').forEach(btn => {
+        btn.classList.toggle('pill-active', btn.dataset.etime === editTimeVal);
+        btn.classList.toggle('pill-inactive', btn.dataset.etime !== editTimeVal);
+      });
+
+      const editCatGroup = document.getElementById('edit-cat-group');
+      editCatGroup.innerHTML = CATEGORIES.map(cat => {
+        const activeClass = cat.id === editCategoryVal ? 'pill-active' : 'pill-inactive';
+        return `
+          <button type="button" onclick="selectEditCategory('${cat.id}')" 
+            class="${activeClass} px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 whitespace-nowrap">
+            <span>${cat.icon}</span><span>${cat.id}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function saveEditedItem() {
+      if (!editingItemId) return;
+      const idx = items.findIndex(i => i.id === editingItemId);
+      if (idx === -1) return;
+
+      const newTitle = document.getElementById('edit-title').value.trim();
+      if (newTitle) items[idx].title = newTitle;
+      items[idx].time = editTimeVal;
+      items[idx].category = editCategoryVal;
+
+      saveItems();
+      renderAllLists();
+
+      if (currentSpotlightId === editingItemId) {
+        document.getElementById('spotlight-content').innerHTML = buildCardHtml(items[idx], true);
+      }
+
+      closeEditModal();
+      showToast('✅ 已更新文章的時間與分類！');
+    }
+
+    // --- 狀態更新（已讀歸檔 / 刪除） ---
+    function toggleArchiveItem(id) {
+      const idx = items.findIndex(i => i.id === id);
+      if (idx === -1) return;
+
+      items[idx].archived = !items[idx].archived;
+      saveItems();
+
+      if (currentSpotlightId === id) closeSpotlight();
+      renderAllLists();
+
+      if (items[idx].archived) {
+        showToast('🎉 已讀完！文章已移至「已讀歸檔」頁');
+      } else {
+        showToast('↩️ 已放回「待讀清單」頁');
+      }
+    }
+
+    function deleteItem(id) {
+      if (!confirm('確定要刪除這筆收藏嗎？')) return;
+      items = items.filter(i => i.id !== id);
+      saveItems();
+      if (currentSpotlightId === id) closeSpotlight();
+      renderAllLists();
+      showToast('🗑️ 已刪除收藏');
+    }
+
+    // --- 渲染卡片與清單 (調整按鈕改為單行不換行) ---
+    function buildCardHtml(item, isSpotlight = false) {
+      const timeInfo = TIME_LABELS[item.time] || TIME_LABELS['3'];
+      const catObj = CATEGORIES.find(c => c.id === item.category) || { id: item.category || '其他', icon: '📦' };
+      const domain = getDomainName(item.url);
+
+      return `
+        <div class="${isSpotlight ? '' : 'zakka-card p-4'} space-y-3">
+          <!-- 卡片頂部標籤與右側操作按鍵 -->
+          <div class="flex items-center justify-between gap-2">
+            <!-- 標籤區：時間、分類、網域 -->
+            <div class="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+              <button onclick="openEditModal('${item.id}')" title="點此調整閱讀時間與分類" 
+                class="tag-pill text-xs font-bold px-2.5 py-1 rounded-lg border border-amber-200/70 transition active:scale-95 whitespace-nowrap shrink-0" 
+                style="background-color: ${timeInfo.badgeBg}; color: ${timeInfo.badgeText};">
+                ${timeInfo.label}
+              </button>
+              <button onclick="openEditModal('${item.id}')" title="點此調整閱讀時間與分類" 
+                class="tag-pill text-xs font-bold px-2.5 py-1 rounded-lg border bg-[#FAF6EE] transition active:scale-95 whitespace-nowrap shrink-0" 
+                style="border-color: var(--border-color); color: var(--text-main);">
+                ${catObj.icon} ${catObj.id} ✎
+              </button>
+              <span class="text-xs px-1 py-0.5 rounded truncate max-w-[110px]" style="color: var(--text-muted);">
+                🔗 ${domain}
+              </span>
+            </div>
+
+            <!-- 右側：調整按鈕 (橫向不換行) 與 刪除垃圾桶 -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openEditModal('${item.id}')" title="調整時間與分類" 
+                class="text-xs font-bold px-2.5 py-1 rounded-xl border bg-[#FFFDF9] hover:bg-amber-50 active:scale-95 transition flex items-center gap-1 whitespace-nowrap shadow-xs" 
+                style="border-color: var(--border-color); color: var(--text-main);">
+                <span>✏️</span><span>調整</span>
+              </button>
+              <button onclick="deleteItem('${item.id}')" title="刪除" 
+                class="text-xs p-1 rounded-lg hover:bg-red-50 active:scale-95 transition" 
+                style="color: var(--text-muted);">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <!-- 文章標題：字體加大更清晰 -->
+          <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block group">
+            <h3 class="card-title font-bold text-base leading-snug group-hover:underline" style="color: var(--text-main);">
+              ${escapeHtml(item.title)}
+            </h3>
+          </a>
+
+          <!-- 底部操作大按鈕：字體放大、高度微增更易觸控 -->
+          <div class="flex items-center gap-2 pt-1">
+            <a href="${item.url}" target="_blank" rel="noopener noreferrer" 
+              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-center border transition active:scale-98 flex items-center justify-center gap-1 whitespace-nowrap"
+              style="background-color: #FAF6EE; border-color: var(--border-color); color: var(--text-main);">
+              <span>👉 前往閱讀</span>
+            </a>
+            <button onclick="toggleArchiveItem('${item.id}')" 
+              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-center transition active:scale-98 flex items-center justify-center gap-1 whitespace-nowrap ${item.archived ? 'border bg-white' : 'btn-primary'}"
+              style="${item.archived ? 'border-color: var(--border-color); color: var(--text-muted);' : ''}">
+              <span>${item.archived ? '↩️ 放回待讀' : '✅ 讀完歸檔'}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAllLists() {
+      const unreadTotal = items.filter(i => !i.archived).length;
+      const archivedTotal = items.filter(i => i.archived).length;
+
+      document.getElementById('nav-badge-unread').textContent = unreadTotal;
+      document.getElementById('nav-badge-archived').textContent = archivedTotal;
+      document.getElementById('add-page-unread-count').textContent = unreadTotal;
+      document.getElementById('archived-total-badge').textContent = archivedTotal;
+
+      // 1. 渲染待讀清單頁
+      const unreadFiltered = getUnreadFilteredItems();
+      const unreadContainer = document.getElementById('unread-list');
+      const randomSection = document.getElementById('random-picker-section');
+
+      if (unreadFiltered.length > 0) {
+        randomSection.classList.remove('hidden');
+        const timeText = unreadFilterTime === 'all' ? 'All' : TIME_LABELS[unreadFilterTime].label;
+        const catText = unreadFilterCategory === 'all' ? '' : `・${unreadFilterCategory}`;
+        document.getElementById('random-banner-title').textContent = `⏳ 目前篩選：${timeText}${catText}（共 ${unreadFiltered.length} 篇）`;
+        unreadContainer.innerHTML = unreadFiltered.map(item => buildCardHtml(item, false)).join('');
+      } else {
+        randomSection.classList.add('hidden');
+        unreadContainer.innerHTML = `
+          <div class="zakka-card p-8 text-center space-y-3">
+            <div class="text-3xl">☀️</div>
+            <p class="text-sm font-bold" style="color: var(--text-main);">目前沒有符合篩選條件的待讀文章</p>
+            <p class="text-xs" style="color: var(--text-muted);">您可以切換上方篩選標籤，或點擊下方按鈕去收藏新靈感！</p>
+            <button onclick="navigateTo('add')" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold inline-block mt-1">
+              📌 前往收藏新文章
+            </button>
+          </div>
+        `;
+      }
+
+      // 2. 渲染已讀歸檔頁
+      const archivedFiltered = getArchivedFilteredItems();
+      const archivedContainer = document.getElementById('archived-list');
+
+      if (archivedFiltered.length > 0) {
+        archivedContainer.innerHTML = archivedFiltered.map(item => buildCardHtml(item, false)).join('');
+      } else {
+        archivedContainer.innerHTML = `
+          <div class="zakka-card p-8 text-center space-y-2">
+            <div class="text-3xl">☕</div>
+            <p class="text-sm font-bold" style="color: var(--text-main);">目前此分類下還沒有已讀歸檔的文章</p>
+            <p class="text-xs" style="color: var(--text-muted);">在「待讀清單」讀完文章並按下「✅ 讀完歸檔」後，就會整齊收納在這裡。</p>
+          </div>
+        `;
+      }
+    }
+
+    // --- 字體大小切換 ---
+    function toggleFontSize() {
+      const isLarge = document.body.classList.toggle('large-font');
+      document.getElementById('font-btn').textContent = isLarge ? 'A-' : 'A+';
+      localStorage.setItem(FONT_KEY, isLarge ? 'large' : 'normal');
+      showToast(isLarge ? '🔍 已切換為超大字體' : '🔍 已恢復標準適中字體');
+    }
+
+    // --- LocalStorage 存取與備份 ---
+    function loadSettings() {
+      const savedFont = localStorage.getItem(FONT_KEY);
+      if (savedFont === 'large') {
+        document.body.classList.add('large-font');
+        document.getElementById('font-btn').textContent = 'A-';
+      }
+    }
+
+    function loadItems() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        items = DEFAULT_ITEMS;
+        saveItems();
+      } else {
+        try {
+          items = JSON.parse(raw);
+          items.forEach(i => {
+            if (i.category === 'AI') i.category = 'AI學習';
+          });
+        } catch (e) {
+          items = DEFAULT_ITEMS;
+        }
+      }
+    }
+
+    function saveItems() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function openBackupModal() {
+      document.getElementById('backup-textarea').value = JSON.stringify(items, null, 2);
+      document.getElementById('backup-modal').classList.remove('hidden');
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backup-modal').classList.add('hidden');
+    }
+
+    function copyBackupData() {
+      const textarea = document.getElementById('backup-textarea');
+      textarea.select();
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        showToast('✅ 備份代碼已複製到剪貼簿！');
+      });
+    }
+
+    function importBackupData() {
+      const raw = document.getElementById('backup-textarea').value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          items = parsed;
+          saveItems();
+          renderAllLists();
+          closeBackupModal();
+          showToast('🎉 資料已成功匯入還原！');
+        } else {
+          alert('格式不正確，請確認貼上的是完整的備份代碼。');
+        }
+      } catch (e) {
+        alert('解析失敗，請確認JSON代碼格式是否完整。');
+      }
+    }
+
+    // --- 動態繪製 iPhone 專屬桌面圖示 (米白與淡奶油色底，單純日式手繪溫暖小太陽置中) ---
+    function generateAppleTouchIcon() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 180;
+      canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+
+      // 1. 米白柔和背景色 (#FAF7F2)
+      ctx.fillStyle = '#FAF7F2';
+      ctx.fillRect(0, 0, 180, 180);
+
+      // 2. 淡奶油圓角方塊背景底襯（類似附圖中的溫潤奶油底）
+      const rx = 16, ry = 16, rw = 148, rh = 148, radius = 38;
+      ctx.fillStyle = '#FCF7EC';
+      ctx.beginPath();
+      ctx.moveTo(rx + radius, ry);
+      ctx.lineTo(rx + rw - radius, ry);
+      ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + radius);
+      ctx.lineTo(rx + rw, ry + rh - radius);
+      ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - radius, ry + rh);
+      ctx.lineTo(rx + radius, ry + rh);
+      ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - radius);
+      ctx.lineTo(rx, ry + radius);
+      ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. 正中央手繪日式溫暖小太陽 (14道圓潤芒刺 + 黑色手繪描邊 + 亮黃金橘飽滿填色)
+      const cx = 90, cy = 90, rOuter = 50, rInner = 38, spikes = 14;
+      let rot = (Math.PI / 2) * 3;
+      const step = Math.PI / spikes;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - rOuter);
+      for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * rOuter;
+        let y = cy + Math.sin(rot) * rOuter;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * rInner;
+        y = cy + Math.sin(rot) * rInner;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - rOuter);
+      ctx.closePath();
+
+      // 太陽金黃飽滿填色
+      ctx.fillStyle = '#FFCC00';
+      ctx.fill();
+
+      // 手繪感黑色描邊 (仿附圖小太陽的手繪線條)
+      ctx.strokeStyle = '#2B2621';
+      ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      const dataUrl = canvas.toDataURL('image/png');
+      document.getElementById('apple-touch-icon').href = dataUrl;
+    }
+
+    // --- 輔助函式 ---
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2400);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>
